@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Final</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: #020617;
+            font-family: Arial;
+            overflow: hidden;
+        }
+
+        /* VIDEO PEQUEÑO */
+        video {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 180px;
+            height: 240px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid white;
+        }
+
+        /* TEXTO ARRIBA */
+        .overlay {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .role {
+            font-size: 22px;
+            color: #38bdf8;
+            margin-bottom: 10px;
+        }
+
+        /* FONDO PARA LEER BIEN */
+        .text-box {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(30, 41, 59, 0.9));
+            padding: 15px 20px;
+            border-radius: 15px;
+            max-width: 90%;
+        }
+
+        .text {
+            font-size: 30px;
+            font-weight: bold;
+            color: white;
+        }
+
+        /* EFECTO PALABRAS */
+        .word {
+            opacity: 0.3;
+        }
+
+        .active {
+            opacity: 1;
+            color: #22c55e;
+        }
+
+        /* TIMER */
+        .timer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 35px;
+            color: white;
+        }
+
+        /* BOTONES (REUBICADOS) */
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        /* BOTONES CON GRADIENTE */
+        .start {
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            color: black;
+        }
+
+        .stop {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            color: white;
+        }
+
+        .record {
+            background: linear-gradient(135deg, #eab308, #facc15);
+            color: black;
+        }
+
+        /* COUNTDOWN */
+        .countdown {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            text-align: center;
+            font-size: 80px;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <video id="video" autoplay muted></video>
+
+    <div class="overlay">
+        <div class="role" id="role"></div>
+        <div class="text-box">
+            <div class="text" id="text"></div>
+        </div>
+    </div>
+
+    <div class="timer" id="timer">0</div>
+
+    <div class="controls">
+        <button class="start" onclick="start()">Iniciar</button>
+        <button class="stop" onclick="stop()">Detener</button>
+        <button class="record" onclick="rec()">Grabar</button>
+    </div>
+
+    <div class="countdown" id="countdown"></div>
+
+    <script>
+        const script = [
+            { role: "Daniela (Nutricionista)", text: "Hi Aldemar, how are you feeling today?", time: 5 },
+            { role: "Aldemar (Paciente)", text: "Hi Daniela, I am feeling a little tired. I think my lifestyle is not very healthy.", time: 9 },
+            { role: "Daniela", text: "Why do you say that? What is your daily routine?", time: 7 },
+            { role: "Aldemar", text: "Well, I usually wake up late, I do not eat breakfast, and I eat a lot of fast food. Also, I am not exercising these days.", time: 12 },
+            { role: "Daniela", text: "I see. Right now, you are having some unhealthy habits. Do you drink enough water?", time: 9 },
+            { role: "Aldemar", text: "Not really. I am drinking soda almost every day.", time: 7 },
+            { role: "Daniela", text: "That is something we need to change. A healthy lifestyle includes eating balanced meals, drinking water, and exercising regularly.", time: 11 },
+            { role: "Aldemar", text: "Yes, I know. What can I do to improve my lifestyle?", time: 8 },
+            { role: "Daniela", text: "You can start by eating more fruits and vegetables, drinking more water, and doing exercise at least three times a week. Also, try to sleep earlier.", time: 13 },
+            { role: "Aldemar", text: "That sounds good. I am trying to change my habits now.", time: 8 },
+            { role: "Daniela", text: "Great! Small changes make a big difference. Are you eating better this week?", time: 9 },
+            { role: "Aldemar", text: "Yes, I am eating more vegetables and I am drinking more water.", time: 9 },
+            { role: "Daniela", text: "Perfect! Keep going. You are improving your lifestyle step by step.", time: 9 },
+            { role: "Aldemar", text: "Thank you, Daniela. I feel more motivated now.", time: 8 }
+        ];
+
+        let i = 0, interval, stream, recorder, chunks = [];
+        const video = document.getElementById("video");
+
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(s => { stream = s; video.srcObject = s; });
+
+        function start() {
+            countdown(3, () => { i = 0; next(); });
+        }
+
+        function countdown(sec, cb) {
+            let el = document.getElementById("countdown");
+            el.innerText = sec;
+            let c = setInterval(() => {
+                sec--;
+                if (sec <= 0) { clearInterval(c); el.innerText = ""; cb(); }
+                else el.innerText = sec;
+            }, 1000);
+        }
+
+        function next() {
+            if (i >= script.length) return;
+
+            let line = script[i];
+            document.getElementById("role").innerText = line.role;
+            showText(line.text, line.time);
+
+            let t = line.time;
+            document.getElementById("timer").innerText = t;
+
+            interval = setInterval(() => {
+                t--;
+                document.getElementById("timer").innerText = t;
+
+                if (t <= 0) {
+                    clearInterval(interval);
+                    i++;
+                    setTimeout(next, 500);
+                }
+            }, 1000);
+        }
+
+        function showText(text, time) {
+            let words = text.split(" ");
+            let container = document.getElementById("text");
+            container.innerHTML = "";
+
+            words.forEach(w => {
+                let span = document.createElement("span");
+                span.innerText = w + " ";
+                span.classList.add("word");
+                container.appendChild(span);
+            });
+
+            let spans = document.querySelectorAll(".word");
+            let delay = (time * 1000) / words.length;
+
+            spans.forEach((s, i) => {
+                setTimeout(() => { s.classList.add("active"); }, i * delay);
+            });
+        }
+
+        function stop() { clearInterval(interval); }
+
+        function rec() {
+            if (!recorder || recorder.state === "inactive") {
+                chunks = [];
+                recorder = new MediaRecorder(stream);
+                recorder.ondataavailable = e => chunks.push(e.data);
+
+                recorder.onstop = () => {
+                    let blob = new Blob(chunks, { type: "video/webm" });
+                    let a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = "video_final.webm";
+                    a.click();
+                };
+
+                recorder.start();
+                alert("Grabando...");
+            } else {
+                recorder.stop();
+                alert("Video guardado");
+            }
+        }
+    </script>
+
+</body>
+
+</html>
